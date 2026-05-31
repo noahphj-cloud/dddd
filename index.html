@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>타원곡선 탐색기</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Noto+Sans+KR:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --border: #2a2a3a;
+    --accent: #7b6ef6;
+    --accent2: #4ecdc4;
+    --text: #e8e8f0;
+    --muted: #6b6b80;
+    --danger: #f06e6e;
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'Noto Sans KR', sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem 1rem;
+  }
+
+  h1 {
+    font-family: var(--mono);
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--accent);
+    letter-spacing: 0.08em;
+    margin-bottom: 0.3rem;
+    text-align: center;
+  }
+  .subtitle {
+    font-size: 0.8rem;
+    color: var(--muted);
+    font-family: var(--mono);
+    text-align: center;
+    margin-bottom: 2rem;
+  }
+
+  .main {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 1.5rem;
+    width: 100%;
+    max-width: 960px;
+  }
+
+  .panel {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem;
+  }
+
+  .panel-title {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    margin-bottom: 1.2rem;
+    text-transform: uppercase;
+  }
+
+  .field-group { margin-bottom: 1.2rem; }
+  .field-label {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--muted);
+    margin-bottom: 0.4rem;
+    display: flex;
+    justify-content: space-between;
+  }
+  .field-label span {
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  input[type=range] {
+    width: 100%;
+    -webkit-appearance: none;
+    height: 2px;
+    background: var(--border);
+    border-radius: 2px;
+    outline: none;
+    margin-bottom: 0.3rem;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+  }
+
+  .eq-box {
+    background: #0d0d18;
+    border: 0.5px solid var(--border);
+    border-radius: 8px;
+    padding: 0.9rem 1rem;
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    color: var(--accent2);
+    text-align: center;
+    margin-bottom: 1rem;
+    letter-spacing: 0.02em;
+  }
+
+  .info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 1rem;
+  }
+  .info-card {
+    background: #0d0d18;
+    border: 0.5px solid var(--border);
+    border-radius: 8px;
+    padding: 0.7rem;
+    text-align: center;
+  }
+  .info-card .label {
+    font-size: 0.65rem;
+    color: var(--muted);
+    font-family: var(--mono);
+    margin-bottom: 4px;
+  }
+  .info-card .value {
+    font-size: 0.9rem;
+    font-family: var(--mono);
+    font-weight: 600;
+    color: var(--text);
+  }
+  .info-card .value.ok { color: var(--accent2); }
+  .info-card .value.bad { color: var(--danger); }
+
+  .warn {
+    background: rgba(240,110,110,0.08);
+    border: 0.5px solid rgba(240,110,110,0.3);
+    border-radius: 8px;
+    padding: 0.7rem 1rem;
+    font-size: 0.72rem;
+    color: var(--danger);
+    font-family: var(--mono);
+    line-height: 1.5;
+    display: none;
+  }
+
+  canvas {
+    width: 100%;
+    height: 100%;
+    border-radius: 8px;
+    display: block;
+  }
+  .canvas-wrap {
+    background: #0a0a12;
+    border: 0.5px solid var(--border);
+    border-radius: 12px;
+    aspect-ratio: 1;
+    overflow: hidden;
+  }
+
+  .presets {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 1.2rem;
+  }
+  .preset-btn {
+    background: transparent;
+    border: 0.5px solid var(--border);
+    border-radius: 6px;
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    padding: 4px 10px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .preset-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .divider {
+    height: 0.5px;
+    background: var(--border);
+    margin: 1rem 0;
+  }
+
+  @media (max-width: 640px) {
+    .main { grid-template-columns: 1fr; }
+    .canvas-wrap { aspect-ratio: 1; }
+  }
+</style>
+</head>
+<body>
+
+<h1>ELLIPTIC CURVE EXPLORER</h1>
+<div class="subtitle">y² = x³ + ax + b 위의 타원곡선</div>
+
+<div class="main">
+  <div class="panel">
+    <div class="panel-title">파라미터</div>
+
+    <div class="eq-box" id="eq-display">y² = x³ − x + 1</div>
+
+    <div class="field-group">
+      <div class="field-label">계수 a <span id="a-out">-1</span></div>
+      <input type="range" id="sl-a" min="-10" max="10" step="0.5" value="-1">
+    </div>
+    <div class="field-group">
+      <div class="field-label">계수 b <span id="b-out">1</span></div>
+      <input type="range" id="sl-b" min="-10" max="10" step="0.5" value="1">
+    </div>
+
+    <div class="divider"></div>
+    <div class="panel-title">프리셋</div>
+    <div class="presets">
+      <button class="preset-btn" data-a="-1" data-b="1">기본 예시</button>
+      <button class="preset-btn" data-a="0" data-b="7">secp256k1 (비트코인) a=0,b=7</button>
+      <button class="preset-btn" data-a="-3" data-b="1">P-256 유사</button>
+      <button class="preset-btn" data-a="0" data-b="0">비특이 위반</button>
+      <button class="preset-btn" data-a="-3" data-b="2">두 덩어리</button>
+    </div>
+
+    <div class="divider"></div>
+    <div class="panel-title">판별 정보</div>
+    <div class="info-grid">
+      <div class="info-card">
+        <div class="label">판별식</div>
+        <div class="value" id="disc-val">23.00</div>
+      </div>
+      <div class="info-card">
+        <div class="label">비특이 조건</div>
+        <div class="value ok" id="singular-val">✓ 유효</div>
+      </div>
+    </div>
+    <div class="warn" id="warn-box">
+      ⚠ 비특이 조건 위반<br>
+      4a³ + 27b² = 0<br>
+      곡선에 뾰족한 점이 생겨 점의 덧셈 불가
+    </div>
+  </div>
+
+  <div class="canvas-wrap">
+    <canvas id="cv"></canvas>
+  </div>
+</div>
+
+<script>
+const cv = document.getElementById('cv');
+const ctx = cv.getContext('2d');
+const slA = document.getElementById('sl-a');
+const slB = document.getElementById('sl-b');
+
+function isDark() { return true; }
+
+function draw() {
+  const W = cv.offsetWidth, H = cv.offsetHeight;
+  cv.width = W; cv.height = H;
+
+  const a = parseFloat(slA.value);
+  const b = parseFloat(slB.value);
+  const disc = 4*a*a*a + 27*b*b;
+  const valid = Math.abs(disc) > 0.001;
+
+  const aStr = a === 0 ? '' : (a > 0 ? ` + ${Math.abs(a) % 1 === 0 ? Math.abs(a) : Math.abs(a).toFixed(1)}x` : ` − ${Math.abs(a) % 1 === 0 ? Math.abs(a) : Math.abs(a).toFixed(1)}x`);
+  const bStr = b === 0 ? '' : (b > 0 ? ` + ${Math.abs(b) % 1 === 0 ? Math.abs(b) : Math.abs(b).toFixed(1)}` : ` − ${Math.abs(b) % 1 === 0 ? Math.abs(b) : Math.abs(b).toFixed(1)}`);
+  document.getElementById('eq-display').textContent = `y² = x³${aStr}${bStr}`;
+  document.getElementById('a-out').textContent = a % 1 === 0 ? a : a.toFixed(1);
+  document.getElementById('b-out').textContent = b % 1 === 0 ? b : b.toFixed(1);
+  document.getElementById('disc-val').textContent = disc.toFixed(2);
+
+  const sv = document.getElementById('singular-val');
+  const wb = document.getElementById('warn-box');
+  if (valid) {
+    sv.textContent = '✓ 유효'; sv.className = 'value ok';
+    wb.style.display = 'none';
+  } else {
+    sv.textContent = '✗ 위반'; sv.className = 'value bad';
+    wb.style.display = 'block';
+  }
+
+  ctx.fillStyle = '#0a0a12';
+  ctx.fillRect(0, 0, W, H);
+
+  const cx = W/2, cy = H/2;
+  const scale = Math.min(W,H) / 9;
+
+  function sx(x) { return cx + x*scale; }
+  function sy(y) { return cy - y*scale; }
+
+  ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+  ctx.lineWidth = 0.5;
+  for (let i = -8; i <= 8; i++) {
+    ctx.beginPath(); ctx.moveTo(sx(i),0); ctx.lineTo(sx(i),H); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0,sy(i)); ctx.lineTo(W,sy(i)); ctx.stroke();
+  }
+
+  ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(0,cy); ctx.lineTo(W,cy); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx,0); ctx.lineTo(cx,H); ctx.stroke();
+
+  ctx.fillStyle = 'rgba(255,255,255,0.3)';
+  ctx.font = `10px 'JetBrains Mono'`;
+  ctx.textAlign = 'center';
+  for (let i = -4; i <= 4; i++) {
+    if (i === 0) continue;
+    if (sx(i) > 15 && sx(i) < W-15) ctx.fillText(i, sx(i), cy+14);
+    if (sy(i) > 15 && sy(i) < H-15) { ctx.textAlign='right'; ctx.fillText(i, cx-5, sy(i)+4); ctx.textAlign='center'; }
+  }
+
+  const color = valid ? '#7b6ef6' : '#f06e6e';
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2;
+  ctx.lineJoin = 'round';
+
+  const steps = W * 3;
+  const xMin = -cx/scale, xMax = (W-cx)/scale;
+  const dx = (xMax-xMin)/steps;
+
+  [1,-1].forEach(sign => {
+    let drawing = false;
+    ctx.beginPath();
+    for (let i = 0; i <= steps; i++) {
+      const x = xMin + i*dx;
+      const rhs = x*x*x + a*x + b;
+      if (rhs < 0) { drawing = false; continue; }
+      const y = sign * Math.sqrt(rhs);
+      const px = sx(x), py = sy(y);
+      if (!drawing) { ctx.moveTo(px,py); drawing=true; }
+      else ctx.lineTo(px,py);
+    }
+    ctx.stroke();
+  });
+
+  ctx.fillStyle = 'rgba(255,255,255,0.2)';
+  ctx.beginPath(); ctx.arc(cx,cy,3,0,Math.PI*2); ctx.fill();
+}
+
+slA.addEventListener('input', draw);
+slB.addEventListener('input', draw);
+
+document.querySelectorAll('.preset-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    slA.value = btn.dataset.a;
+    slB.value = btn.dataset.b;
+    draw();
+  });
+});
+
+window.addEventListener('resize', draw);
+draw();
+</script>
+</body>
+</html>
